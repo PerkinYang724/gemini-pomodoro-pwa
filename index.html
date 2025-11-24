@@ -62,16 +62,6 @@
             margin: 0; 
         }
 
-        /* Loading Animation for AI */
-        @keyframes sparkle {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .animate-sparkle {
-            animation: sparkle 1.5s infinite ease-in-out;
-        }
-
         /* Ambient Progress Fill Transition */
         #ambient-fill {
             transition: height 0.2s linear;
@@ -141,14 +131,9 @@
                 <i data-lucide="play" class="w-12 h-12 ml-1 fill-current"></i>
             </button>
 
-            <!-- Zen Coach (AI) -->
-            <button onclick="app.getZenCoachTip()" id="btn-coach" class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press relative overflow-hidden backdrop-blur-sm" title="Get Zen Advice (AI)">
-                <i data-lucide="lightbulb" class="w-7 h-7"></i>
-            </button>
-
             <!-- Settings -->
-            <button onclick="app.toggleSettings()" class="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 text-white/80 flex items-center justify-center transition btn-press" title="Settings">
-                <i data-lucide="settings-2" class="w-6 h-6"></i>
+            <button onclick="app.toggleSettings()" class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press backdrop-blur-sm" title="Settings">
+                <i data-lucide="settings-2" class="w-7 h-7"></i>
             </button>
         </div>
 
@@ -177,11 +162,6 @@
                         class="w-full pl-5 pr-4 py-4 rounded-2xl bg-slate-100 text-slate-900 placeholder-slate-400 focus:bg-white border-2 border-slate-200 focus:border-slate-900 transition text-base font-bold shadow-inner">
                 </div>
                 
-                <!-- Magic Breakdown Button (AI) -->
-                <button type="button" onclick="app.magicBreakdown()" id="btn-magic" class="bg-indigo-100 text-indigo-700 px-4 rounded-2xl hover:bg-indigo-200 transition btn-press flex items-center justify-center border-2 border-indigo-200" title="Break down with AI">
-                    <i data-lucide="sparkles" class="w-6 h-6"></i>
-                </button>
-
                 <!-- Add Button -->
                 <button type="submit" class="bg-slate-900 text-white px-5 rounded-2xl hover:bg-slate-800 transition btn-press flex items-center justify-center shadow-lg">
                     <i data-lucide="plus" class="w-6 h-6"></i>
@@ -247,9 +227,6 @@
     </div>
 
     <script>
-        // --- API CONFIG ---
-        const apiKey = ""; // Provided by environment at runtime
-        
         // --- Audio Context for Beeps ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
@@ -270,29 +247,6 @@
             oscillator.stop(audioCtx.currentTime + 0.5);
         }
 
-        // --- Gemini AI Helper ---
-        async function callGemini(prompt) {
-            try {
-                const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
-                    {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }]
-                        })
-                    }
-                );
-                if (!response.ok) throw new Error("AI Service Unavailable");
-                const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text;
-            } catch (e) {
-                console.error(e);
-                app.showToast("Couldn't reach the AI. Try again later.");
-                return null;
-            }
-        }
-
         // --- App Logic ---
         const app = {
             timer: null,
@@ -302,7 +256,6 @@
             isRunning: false,
             endTime: null,
             tasks: [],
-            isAiLoading: false,
             settings: {
                 pomodoro: 25, short: 5, long: 15, autoStart: false, sound: true
             },
@@ -320,75 +273,6 @@
                 this.applyTheme();
                 lucide.createIcons();
                 if ("Notification" in window) Notification.requestPermission();
-            },
-
-            // --- AI Features ---
-            
-            async magicBreakdown() {
-                const input = document.getElementById('task-input');
-                const text = input.value.trim();
-                if (!text) {
-                    this.showToast("Define objective first!");
-                    return;
-                }
-                if (this.isAiLoading) return;
-
-                // UI Loading State
-                this.isAiLoading = true;
-                const btn = document.getElementById('btn-magic');
-                btn.innerHTML = `<i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i>`;
-                lucide.createIcons();
-
-                const prompt = `You are a productivity expert. Break down the task "${text}" into 3 to 5 smaller, actionable, concrete sub-tasks that can be done in 25 minutes each. Return ONLY a raw valid JSON array of strings (e.g. ["Draft outline", "Research topic"]). Do not use Markdown formatting or code blocks.`;
-
-                const result = await callGemini(prompt);
-
-                if (result) {
-                    try {
-                        // Clean markdown if present
-                        const cleanJson = result.replace(/```json|```/g, '').trim();
-                        const subtasks = JSON.parse(cleanJson);
-                        
-                        if (Array.isArray(subtasks)) {
-                            subtasks.forEach(st => {
-                                this.tasks.unshift({ id: Date.now() + Math.random(), text: st, done: false });
-                            });
-                            this.saveData();
-                            this.renderTasks();
-                            input.value = ''; // Clear input
-                            this.showToast(`Created ${subtasks.length} sub-tasks! ✨`);
-                        }
-                    } catch (e) {
-                        console.error("Parse error", e);
-                        this.showToast("AI got confused. Try again.");
-                    }
-                }
-
-                // Reset UI
-                this.isAiLoading = false;
-                btn.innerHTML = `<i data-lucide="sparkles" class="w-6 h-6"></i>`;
-                lucide.createIcons();
-            },
-
-            async getZenCoachTip() {
-                if (this.isAiLoading) return;
-                
-                this.isAiLoading = true;
-                const btn = document.getElementById('btn-coach');
-                btn.innerHTML = `<i data-lucide="loader-2" class="w-7 h-7 animate-spin"></i>`;
-                lucide.createIcons();
-
-                const context = this.mode === 'pomodoro' ? "FOCUS session" : "BREAK session";
-                const prompt = `You are a Zen master productivity coach. Give me a very short (max 12 words), calm, and motivating tip for someone starting a ${context}. No quotes, just direct advice.`;
-
-                const tip = await callGemini(prompt);
-                if (tip) {
-                    this.showToast(tip.replace(/"/g, ''));
-                }
-
-                this.isAiLoading = false;
-                btn.innerHTML = `<i data-lucide="lightbulb" class="w-7 h-7"></i>`;
-                lucide.createIcons();
             },
 
             showToast(msg) {
