@@ -86,54 +86,55 @@
 <!-- Default background set to Red-600 for high contrast start -->
 <body class="bg-red-600 h-screen flex flex-col overflow-hidden text-slate-900 selection:bg-black/20 relative">
 
-    <!-- Ambient Progress Background Fill - Fixed: Moved to top-0 and increased opacity so it isn't hidden by the task panel -->
+    <!-- Ambient Progress Background Fill -->
     <div id="ambient-fill" class="fixed top-0 left-0 w-full bg-white/30 pointer-events-none z-0 h-0 transition-[height] duration-1000 ease-linear"></div>
 
     <!-- Header / Mode Switcher -->
-    <header class="flex justify-center py-6 z-10 shrink-0">
-        <div class="glass-panel rounded-full p-1.5 flex space-x-1 shadow-xl">
-            <button onclick="app.switchMode('pomodoro')" id="btn-pomodoro" class="px-5 py-2.5 rounded-full text-sm font-bold transition-all bg-red-100 text-red-700">FOCUS</button>
-            <button onclick="app.switchMode('short')" id="btn-short" class="px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:bg-slate-100 text-slate-600">SHORT</button>
-            <button onclick="app.switchMode('long')" id="btn-long" class="px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:bg-slate-100 text-slate-600">LONG</button>
+    <header class="flex justify-center py-4 sm:py-6 z-10 shrink-0 transition-all">
+        <div class="glass-panel rounded-full p-1.5 flex space-x-1 shadow-xl scale-90 sm:scale-100 origin-top">
+            <button onclick="app.switchMode('pomodoro')" id="btn-pomodoro" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all bg-red-100 text-red-700">FOCUS</button>
+            <button onclick="app.switchMode('short')" id="btn-short" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all hover:bg-slate-100 text-slate-600">SHORT</button>
+            <button onclick="app.switchMode('long')" id="btn-long" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all hover:bg-slate-100 text-slate-600">LONG</button>
         </div>
     </header>
 
     <!-- Main Timer Section -->
-    <main class="flex-grow flex flex-col items-center justify-center relative z-10 px-4">
+    <!-- Added pb-[36vh] to reserve space for bottom sheet, preventing overlap -->
+    <main class="flex-grow flex flex-col items-center justify-center relative z-10 px-4 pb-[36vh] sm:pb-0 transition-all">
         
         <!-- Toast Notification Area -->
         <div id="toast" class="absolute top-0 bg-white shadow-2xl border border-slate-200 px-6 py-4 rounded-full transform -translate-y-32 transition-transform duration-500 z-50 flex items-center max-w-xs sm:max-w-md text-center">
             <span id="toast-msg" class="text-sm font-bold text-slate-800"></span>
         </div>
 
-        <!-- Timer Circle -->
-        <div class="relative w-72 h-72 sm:w-80 sm:h-80 mb-8 cursor-pointer drop-shadow-2xl" onclick="app.toggleTimer()">
+        <!-- Timer Circle - Responsive Sizing -->
+        <div class="relative w-60 h-60 sm:w-80 sm:h-80 mb-6 sm:mb-8 cursor-pointer drop-shadow-2xl transition-all" onclick="app.toggleTimer()">
             <svg class="w-full h-full" viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="5" />
                 <circle id="progress-ring" class="progress-ring__circle" cx="60" cy="60" r="54" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-dasharray="339.292" stroke-dashoffset="0" />
             </svg>
             
             <div class="absolute inset-0 flex flex-col items-center justify-center text-white select-none">
-                <div id="timer-display" class="text-7xl sm:text-8xl font-bold tracking-tighter drop-shadow-md">25:00</div>
-                <div id="timer-status" class="text-xl font-bold tracking-widest mt-4 opacity-100">READY</div>
+                <div id="timer-display" class="text-6xl sm:text-8xl font-bold tracking-tighter drop-shadow-md transition-all">25:00</div>
+                <div id="timer-status" class="text-base sm:text-xl font-bold tracking-widest mt-2 sm:mt-4 opacity-100 transition-all">READY</div>
             </div>
         </div>
 
-        <!-- Main Controls -->
-        <div class="flex items-center space-x-4 sm:space-x-8 mb-4">
+        <!-- Main Controls - Responsive Sizing -->
+        <div class="flex items-center space-x-4 sm:space-x-8 mb-2 sm:mb-4">
             <!-- Reset -->
-            <button onclick="app.resetTimer()" class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press backdrop-blur-sm" title="Reset Timer">
-                <i data-lucide="rotate-ccw" class="w-7 h-7"></i>
+            <button onclick="app.resetTimer()" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press backdrop-blur-sm" title="Reset Timer">
+                <i data-lucide="rotate-ccw" class="w-6 h-6 sm:w-7 sm:h-7"></i>
             </button>
             
             <!-- Play/Pause -->
-            <button onclick="app.toggleTimer()" id="main-action-btn" class="h-24 w-24 rounded-3xl bg-white text-red-600 shadow-2xl flex items-center justify-center transition transform hover:scale-105 btn-press border-4 border-white/50" title="Start/Pause">
-                <i data-lucide="play" class="w-12 h-12 ml-1 fill-current"></i>
+            <button onclick="app.toggleTimer()" id="main-action-btn" class="h-20 w-20 sm:h-24 sm:w-24 rounded-3xl bg-white text-red-600 shadow-2xl flex items-center justify-center transition transform hover:scale-105 btn-press border-4 border-white/50" title="Start/Pause">
+                <i data-lucide="play" class="w-10 h-10 sm:w-12 sm:h-12 ml-1 fill-current"></i>
             </button>
 
             <!-- Settings -->
-            <button onclick="app.toggleSettings()" class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press backdrop-blur-sm" title="Settings">
-                <i data-lucide="settings-2" class="w-7 h-7"></i>
+            <button onclick="app.toggleSettings()" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press backdrop-blur-sm" title="Settings">
+                <i data-lucide="settings-2" class="w-6 h-6 sm:w-7 sm:h-7"></i>
             </button>
         </div>
 
@@ -141,10 +142,10 @@
 
     <!-- Task Manager -->
     <section class="glass-panel rounded-t-[2.5rem] mx-auto w-full max-w-md flex flex-col z-20 transition-all duration-300 absolute bottom-0 h-[35vh] sm:h-[40vh] shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
-        <div class="p-8 flex flex-col h-full">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-black text-slate-800 flex items-center tracking-tight">
-                    <i data-lucide="target" class="w-6 h-6 mr-2 text-slate-400"></i>
+        <div class="p-6 sm:p-8 flex flex-col h-full">
+            <div class="flex justify-between items-center mb-4 sm:mb-6">
+                <h2 class="text-lg sm:text-xl font-black text-slate-800 flex items-center tracking-tight">
+                    <i data-lucide="target" class="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-slate-400"></i>
                     MISSION
                 </h2>
                 <div class="flex gap-2 items-center">
@@ -156,20 +157,20 @@
             </div>
 
             <!-- Add Task Form -->
-            <form onsubmit="app.addTask(event)" class="relative mb-6 flex gap-3">
+            <form onsubmit="app.addTask(event)" class="relative mb-4 sm:mb-6 flex gap-3">
                 <div class="relative flex-grow">
                     <input type="text" id="task-input" placeholder="Define objective..." 
-                        class="w-full pl-5 pr-4 py-4 rounded-2xl bg-slate-100 text-slate-900 placeholder-slate-400 focus:bg-white border-2 border-slate-200 focus:border-slate-900 transition text-base font-bold shadow-inner">
+                        class="w-full pl-5 pr-4 py-3 sm:py-4 rounded-2xl bg-slate-100 text-slate-900 placeholder-slate-400 focus:bg-white border-2 border-slate-200 focus:border-slate-900 transition text-sm sm:text-base font-bold shadow-inner">
                 </div>
                 
                 <!-- Add Button -->
-                <button type="submit" class="bg-slate-900 text-white px-5 rounded-2xl hover:bg-slate-800 transition btn-press flex items-center justify-center shadow-lg">
-                    <i data-lucide="plus" class="w-6 h-6"></i>
+                <button type="submit" class="bg-slate-900 text-white px-4 sm:px-5 rounded-2xl hover:bg-slate-800 transition btn-press flex items-center justify-center shadow-lg">
+                    <i data-lucide="plus" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                 </button>
             </form>
 
             <!-- Task List -->
-            <ul id="task-list" class="task-scroll overflow-y-auto flex-1 space-y-3 pb-6 px-1">
+            <ul id="task-list" class="task-scroll overflow-y-auto flex-1 space-y-2 sm:space-y-3 pb-6 px-1">
                 <!-- Tasks injected here -->
                 <li class="text-center text-slate-400 text-sm mt-8 font-medium">No objectives defined.<br>Engage the timer.</li>
             </ul>
@@ -357,10 +358,10 @@
                     const btn = document.getElementById(`btn-${m}`);
                     if (m === this.mode) {
                         // Active: White Background, Text matches theme color (high contrast)
-                        btn.className = `px-5 py-2.5 rounded-full text-sm font-bold shadow-lg transition-all bg-white ${this.themes[this.mode].text}`;
+                        btn.className = `px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold shadow-lg transition-all bg-white ${this.themes[this.mode].text}`;
                     } else {
                         // Inactive: Transparent, White Text
-                        btn.className = `px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:bg-white/20 text-white/90`;
+                        btn.className = `px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all hover:bg-white/20 text-white/90`;
                     }
                 });
 
@@ -454,8 +455,8 @@
             updateControls() {
                 const btn = document.getElementById('main-action-btn');
                 btn.innerHTML = this.isRunning 
-                    ? `<i data-lucide="pause" class="w-12 h-12 ml-0.5 fill-current"></i>` 
-                    : `<i data-lucide="play" class="w-12 h-12 ml-1 fill-current"></i>`;
+                    ? `<i data-lucide="pause" class="w-10 h-10 sm:w-12 sm:h-12 ml-0.5 fill-current"></i>` 
+                    : `<i data-lucide="play" class="w-10 h-10 sm:w-12 sm:h-12 ml-1 fill-current"></i>`;
                 lucide.createIcons();
             },
 
