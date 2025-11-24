@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zen Pomodoro + AI</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#dc2626" id="theme-color">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc2626'/></svg>">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.5s linear, stroke 0.5s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .task-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .task-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+
+        /* Stark Contrast Glass Panel */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.96); /* More solid for contrast */
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5); /* Deeper shadow */
+        }
+
+        .btn-press:active {
+            transform: scale(0.95);
+        }
+
+        input:focus {
+            outline: none;
+        }
+        
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        /* Loading Animation for AI */
+        @keyframes sparkle {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-sparkle {
+            animation: sparkle 1.5s infinite ease-in-out;
+        }
+
+        /* Ambient Progress Fill Transition */
+        #ambient-fill {
+            transition: height 0.2s linear;
+        }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pomo: '#dc2626', 
+                        short: '#047857', 
+                        long: '#4338ca', 
+                        dark: '#0f172a'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<!-- Default background set to Red-600 for high contrast start -->
+<body class="bg-red-600 h-screen flex flex-col overflow-hidden text-slate-900 selection:bg-black/20 relative">
+
+    <!-- Ambient Progress Background Fill - Fixed: Moved to top-0 and increased opacity so it isn't hidden by the task panel -->
+    <div id="ambient-fill" class="fixed top-0 left-0 w-full bg-white/30 pointer-events-none z-0 h-0 transition-[height] duration-1000 ease-linear"></div>
+
+    <!-- Header / Mode Switcher -->
+    <header class="flex justify-center py-6 z-10 shrink-0">
+        <div class="glass-panel rounded-full p-1.5 flex space-x-1 shadow-xl">
+            <button onclick="app.switchMode('pomodoro')" id="btn-pomodoro" class="px-5 py-2.5 rounded-full text-sm font-bold transition-all bg-red-100 text-red-700">FOCUS</button>
+            <button onclick="app.switchMode('short')" id="btn-short" class="px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:bg-slate-100 text-slate-600">SHORT</button>
+            <button onclick="app.switchMode('long')" id="btn-long" class="px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:bg-slate-100 text-slate-600">LONG</button>
+        </div>
+    </header>
+
+    <!-- Main Timer Section -->
+    <main class="flex-grow flex flex-col items-center justify-center relative z-10 px-4">
+        
+        <!-- Toast Notification Area -->
+        <div id="toast" class="absolute top-0 bg-white shadow-2xl border border-slate-200 px-6 py-4 rounded-full transform -translate-y-32 transition-transform duration-500 z-50 flex items-center max-w-xs sm:max-w-md text-center">
+            <span id="toast-msg" class="text-sm font-bold text-slate-800"></span>
+        </div>
+
+        <!-- Timer Circle -->
+        <div class="relative w-72 h-72 sm:w-80 sm:h-80 mb-8 cursor-pointer drop-shadow-2xl" onclick="app.toggleTimer()">
+            <svg class="w-full h-full" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="5" />
+                <circle id="progress-ring" class="progress-ring__circle" cx="60" cy="60" r="54" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-dasharray="339.292" stroke-dashoffset="0" />
+            </svg>
+            
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-white select-none">
+                <div id="timer-display" class="text-7xl sm:text-8xl font-bold tracking-tighter drop-shadow-md">25:00</div>
+                <div id="timer-status" class="text-xl font-bold tracking-widest mt-4 opacity-100">READY</div>
+            </div>
+        </div>
+
+        <!-- Main Controls -->
+        <div class="flex items-center space-x-4 sm:space-x-8 mb-4">
+            <!-- Reset -->
+            <button onclick="app.resetTimer()" class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press backdrop-blur-sm" title="Reset Timer">
+                <i data-lucide="rotate-ccw" class="w-7 h-7"></i>
+            </button>
+            
+            <!-- Play/Pause -->
+            <button onclick="app.toggleTimer()" id="main-action-btn" class="h-24 w-24 rounded-3xl bg-white text-red-600 shadow-2xl flex items-center justify-center transition transform hover:scale-105 btn-press border-4 border-white/50" title="Start/Pause">
+                <i data-lucide="play" class="w-12 h-12 ml-1 fill-current"></i>
+            </button>
+
+            <!-- Zen Coach (AI) -->
+            <button onclick="app.getZenCoachTip()" id="btn-coach" class="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press relative overflow-hidden backdrop-blur-sm" title="Get Zen Advice (AI)">
+                <i data-lucide="lightbulb" class="w-7 h-7"></i>
+            </button>
+
+            <!-- Settings -->
+            <button onclick="app.toggleSettings()" class="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 text-white/80 flex items-center justify-center transition btn-press" title="Settings">
+                <i data-lucide="settings-2" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Task Manager -->
+    <section class="glass-panel rounded-t-[2.5rem] mx-auto w-full max-w-md flex flex-col z-20 transition-all duration-300 absolute bottom-0 h-[35vh] sm:h-[40vh] shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
+        <div class="p-8 flex flex-col h-full">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black text-slate-800 flex items-center tracking-tight">
+                    <i data-lucide="target" class="w-6 h-6 mr-2 text-slate-400"></i>
+                    MISSION
+                </h2>
+                <div class="flex gap-2 items-center">
+                    <button onclick="app.copyTasks()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition" title="Copy Mission to Clipboard">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </button>
+                    <span id="task-count" class="text-xs font-black bg-slate-900 text-white px-3 py-1.5 rounded-full tracking-wider">0 LEFT</span>
+                </div>
+            </div>
+
+            <!-- Add Task Form -->
+            <form onsubmit="app.addTask(event)" class="relative mb-6 flex gap-3">
+                <div class="relative flex-grow">
+                    <input type="text" id="task-input" placeholder="Define objective..." 
+                        class="w-full pl-5 pr-4 py-4 rounded-2xl bg-slate-100 text-slate-900 placeholder-slate-400 focus:bg-white border-2 border-slate-200 focus:border-slate-900 transition text-base font-bold shadow-inner">
+                </div>
+                
+                <!-- Magic Breakdown Button (AI) -->
+                <button type="button" onclick="app.magicBreakdown()" id="btn-magic" class="bg-indigo-100 text-indigo-700 px-4 rounded-2xl hover:bg-indigo-200 transition btn-press flex items-center justify-center border-2 border-indigo-200" title="Break down with AI">
+                    <i data-lucide="sparkles" class="w-6 h-6"></i>
+                </button>
+
+                <!-- Add Button -->
+                <button type="submit" class="bg-slate-900 text-white px-5 rounded-2xl hover:bg-slate-800 transition btn-press flex items-center justify-center shadow-lg">
+                    <i data-lucide="plus" class="w-6 h-6"></i>
+                </button>
+            </form>
+
+            <!-- Task List -->
+            <ul id="task-list" class="task-scroll overflow-y-auto flex-1 space-y-3 pb-6 px-1">
+                <!-- Tasks injected here -->
+                <li class="text-center text-slate-400 text-sm mt-8 font-medium">No objectives defined.<br>Engage the timer.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 backdrop-blur-md opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl transform scale-95 transition-transform duration-200 border border-white/20" id="settings-content">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight">Settings</h3>
+                <button onclick="app.toggleSettings()" class="text-slate-400 hover:text-slate-800 bg-slate-100 p-2 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="space-y-8">
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Timer (Minutes)</label>
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <label class="text-xs text-slate-500 mb-1.5 block font-bold text-center">Focus</label>
+                            <input type="number" id="set-pomo" value="25" class="w-full bg-red-50 border-2 border-red-100 rounded-xl p-3 text-center font-black text-red-600 focus:border-red-500 transition">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-xs text-slate-500 mb-1.5 block font-bold text-center">Short</label>
+                            <input type="number" id="set-short" value="5" class="w-full bg-emerald-50 border-2 border-emerald-100 rounded-xl p-3 text-center font-black text-emerald-600 focus:border-emerald-500 transition">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-xs text-slate-500 mb-1.5 block font-bold text-center">Long</label>
+                            <input type="number" id="set-long" value="15" class="w-full bg-indigo-50 border-2 border-indigo-100 rounded-xl p-3 text-center font-black text-indigo-600 focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-2">
+                    <span class="text-slate-800 font-bold text-lg">Auto-start Breaks</span>
+                    <button onclick="app.toggleAutoStart()" id="btn-autostart" class="w-14 h-8 bg-slate-200 rounded-full relative transition-colors duration-300 border-2 border-transparent">
+                        <div class="w-6 h-6 bg-white rounded-full shadow-md absolute top-0.5 left-0.5 transition-transform duration-300"></div>
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-between p-2">
+                    <span class="text-slate-800 font-bold text-lg">Sound</span>
+                    <button onclick="app.toggleSound()" id="btn-sound" class="w-14 h-8 bg-slate-900 rounded-full relative transition-colors duration-300 border-2 border-transparent">
+                        <div class="w-6 h-6 bg-white rounded-full shadow-md absolute top-0.5 right-0.5 transition-transform duration-300"></div>
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="app.saveSettings()" class="w-full mt-10 bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition btn-press shadow-lg">
+                Save Changes
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- API CONFIG ---
+        const apiKey = ""; // Provided by environment at runtime
+        
+        // --- Audio Context for Beeps ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playNotificationSound() {
+            if (!app.settings.sound) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); 
+            oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.5);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        // --- Gemini AI Helper ---
+        async function callGemini(prompt) {
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }]
+                        })
+                    }
+                );
+                if (!response.ok) throw new Error("AI Service Unavailable");
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text;
+            } catch (e) {
+                console.error(e);
+                app.showToast("Couldn't reach the AI. Try again later.");
+                return null;
+            }
+        }
+
+        // --- App Logic ---
+        const app = {
+            timer: null,
+            mode: 'pomodoro',
+            timeLeft: 1500,
+            totalTime: 1500,
+            isRunning: false,
+            endTime: null,
+            tasks: [],
+            isAiLoading: false,
+            settings: {
+                pomodoro: 25, short: 5, long: 15, autoStart: false, sound: true
+            },
+            // Updated Stark Contrast Themes
+            themes: {
+                pomodoro: { bg: 'bg-red-600', text: 'text-red-600', meta: '#dc2626' },
+                short: { bg: 'bg-emerald-700', text: 'text-emerald-700', meta: '#047857' },
+                long: { bg: 'bg-indigo-700', text: 'text-indigo-700', meta: '#4338ca' }
+            },
+
+            init() {
+                this.loadData();
+                this.renderTasks();
+                this.updateDisplay();
+                this.applyTheme();
+                lucide.createIcons();
+                if ("Notification" in window) Notification.requestPermission();
+            },
+
+            // --- AI Features ---
+            
+            async magicBreakdown() {
+                const input = document.getElementById('task-input');
+                const text = input.value.trim();
+                if (!text) {
+                    this.showToast("Define objective first!");
+                    return;
+                }
+                if (this.isAiLoading) return;
+
+                // UI Loading State
+                this.isAiLoading = true;
+                const btn = document.getElementById('btn-magic');
+                btn.innerHTML = `<i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i>`;
+                lucide.createIcons();
+
+                const prompt = `You are a productivity expert. Break down the task "${text}" into 3 to 5 smaller, actionable, concrete sub-tasks that can be done in 25 minutes each. Return ONLY a raw valid JSON array of strings (e.g. ["Draft outline", "Research topic"]). Do not use Markdown formatting or code blocks.`;
+
+                const result = await callGemini(prompt);
+
+                if (result) {
+                    try {
+                        // Clean markdown if present
+                        const cleanJson = result.replace(/```json|```/g, '').trim();
+                        const subtasks = JSON.parse(cleanJson);
+                        
+                        if (Array.isArray(subtasks)) {
+                            subtasks.forEach(st => {
+                                this.tasks.unshift({ id: Date.now() + Math.random(), text: st, done: false });
+                            });
+                            this.saveData();
+                            this.renderTasks();
+                            input.value = ''; // Clear input
+                            this.showToast(`Created ${subtasks.length} sub-tasks! ✨`);
+                        }
+                    } catch (e) {
+                        console.error("Parse error", e);
+                        this.showToast("AI got confused. Try again.");
+                    }
+                }
+
+                // Reset UI
+                this.isAiLoading = false;
+                btn.innerHTML = `<i data-lucide="sparkles" class="w-6 h-6"></i>`;
+                lucide.createIcons();
+            },
+
+            async getZenCoachTip() {
+                if (this.isAiLoading) return;
+                
+                this.isAiLoading = true;
+                const btn = document.getElementById('btn-coach');
+                btn.innerHTML = `<i data-lucide="loader-2" class="w-7 h-7 animate-spin"></i>`;
+                lucide.createIcons();
+
+                const context = this.mode === 'pomodoro' ? "FOCUS session" : "BREAK session";
+                const prompt = `You are a Zen master productivity coach. Give me a very short (max 12 words), calm, and motivating tip for someone starting a ${context}. No quotes, just direct advice.`;
+
+                const tip = await callGemini(prompt);
+                if (tip) {
+                    this.showToast(tip.replace(/"/g, ''));
+                }
+
+                this.isAiLoading = false;
+                btn.innerHTML = `<i data-lucide="lightbulb" class="w-7 h-7"></i>`;
+                lucide.createIcons();
+            },
+
+            showToast(msg) {
+                const toast = document.getElementById('toast');
+                const txt = document.getElementById('toast-msg');
+                txt.innerText = msg;
+                toast.classList.remove('-translate-y-32');
+                toast.classList.add('translate-y-8');
+                
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-8');
+                    toast.classList.add('-translate-y-32');
+                }, 4000);
+            },
+
+            // --- Standard PWA Logic ---
+
+            // New Copy Function
+            copyTasks() {
+                if (this.tasks.length === 0) {
+                    this.showToast("Nothing to copy.");
+                    return;
+                }
+                
+                const text = "MY MISSION:\n\n" + this.tasks.map(t => `${t.done ? '[x]' : '[ ]'} ${t.text}`).join('\n');
+                
+                // Legacy method for broad compatibility
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    this.showToast("Mission copied to clipboard.");
+                } catch (err) {
+                    console.error(err);
+                    this.showToast("Failed to copy.");
+                }
+                document.body.removeChild(textArea);
+            },
+
+            loadData() {
+                const savedSettings = localStorage.getItem('zen-settings');
+                if (savedSettings) this.settings = JSON.parse(savedSettings);
+                const savedTasks = localStorage.getItem('zen-tasks');
+                if (savedTasks) this.tasks = JSON.parse(savedTasks);
+                
+                document.getElementById('set-pomo').value = this.settings.pomodoro;
+                document.getElementById('set-short').value = this.settings.short;
+                document.getElementById('set-long').value = this.settings.long;
+                this.updateToggleUI('btn-autostart', this.settings.autoStart);
+                this.updateToggleUI('btn-sound', this.settings.sound);
+                this.resetTimer(false);
+            },
+
+            saveData() {
+                localStorage.setItem('zen-tasks', JSON.stringify(this.tasks));
+            },
+
+            saveSettings() {
+                this.settings.pomodoro = parseInt(document.getElementById('set-pomo').value);
+                this.settings.short = parseInt(document.getElementById('set-short').value);
+                this.settings.long = parseInt(document.getElementById('set-long').value);
+                localStorage.setItem('zen-settings', JSON.stringify(this.settings));
+                this.toggleSettings();
+                if (!this.isRunning) this.resetTimer();
+            },
+
+            switchMode(newMode) {
+                this.mode = newMode;
+                this.resetTimer();
+                this.applyTheme();
+            },
+
+            applyTheme() {
+                const body = document.body;
+                // Remove old background classes (handling both red-600, etc and old 400s)
+                body.className = body.className.replace(/bg-\w+-(400|600|700)/g, '');
+                body.classList.add(this.themes[this.mode].bg);
+
+                ['pomodoro', 'short', 'long'].forEach(m => {
+                    const btn = document.getElementById(`btn-${m}`);
+                    if (m === this.mode) {
+                        // Active: White Background, Text matches theme color (high contrast)
+                        btn.className = `px-5 py-2.5 rounded-full text-sm font-bold shadow-lg transition-all bg-white ${this.themes[this.mode].text}`;
+                    } else {
+                        // Inactive: Transparent, White Text
+                        btn.className = `px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:bg-white/20 text-white/90`;
+                    }
+                });
+
+                const actionBtn = document.getElementById('main-action-btn');
+                actionBtn.className = actionBtn.className.replace(/text-\w+-(500|600|700)/g, '');
+                actionBtn.classList.add(this.themes[this.mode].text);
+                
+                const timerStatus = document.getElementById('timer-status');
+                if (timerStatus) {
+                     if (this.timeLeft === 0) timerStatus.innerText = "COMPLETE";
+                     else if (this.isRunning) timerStatus.innerText = this.mode === 'pomodoro' ? "FLOW STATE" : "RECHARGING";
+                     else timerStatus.innerText = this.mode === 'pomodoro' ? "READY" : "REST";
+                }
+                
+                document.getElementById('theme-color').setAttribute('content', this.themes[this.mode].meta);
+            },
+
+            toggleTimer() {
+                if (this.isRunning) this.pauseTimer();
+                else this.startTimer();
+            },
+
+            startTimer() {
+                if (this.isRunning) return;
+                this.isRunning = true;
+                this.endTime = Date.now() + (this.timeLeft * 1000);
+                this.updateControls();
+                this.timer = setInterval(() => {
+                    const now = Date.now();
+                    const diff = Math.ceil((this.endTime - now) / 1000);
+                    if (diff <= 0) {
+                        this.completeTimer();
+                    } else {
+                        this.timeLeft = diff;
+                        this.updateDisplay();
+                    }
+                }, 100);
+            },
+
+            pauseTimer() {
+                this.isRunning = false;
+                clearInterval(this.timer);
+                this.updateControls();
+            },
+
+            resetTimer(autoStart = false) {
+                this.pauseTimer();
+                this.timeLeft = this.settings[this.mode] * 60;
+                this.totalTime = this.timeLeft;
+                this.updateDisplay();
+                if (autoStart && this.settings.autoStart) setTimeout(() => this.startTimer(), 500);
+            },
+
+            completeTimer() {
+                this.pauseTimer();
+                this.timeLeft = 0;
+                this.updateDisplay();
+                playNotificationSound();
+                if (Notification.permission === "granted") {
+                    new Notification("Zen Pomodoro", {
+                        body: this.mode === 'pomodoro' ? "Focus session complete!" : "Break is over!",
+                        icon: "https://cdn-icons-png.flaticon.com/512/2928/2928956.png"
+                    });
+                }
+                document.getElementById('timer-status').innerText = "TIME IS UP";
+            },
+
+            updateDisplay() {
+                const minutes = Math.floor(this.timeLeft / 60);
+                const seconds = this.timeLeft % 60;
+                const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                document.getElementById('timer-display').innerText = timeString;
+                document.title = `${timeString} - Zen Focus`;
+                
+                const circle = document.getElementById('progress-ring');
+                const radius = circle.r.baseVal.value;
+                const circumference = radius * 2 * Math.PI;
+                const offset = circumference - (this.timeLeft / this.totalTime) * circumference;
+                circle.style.strokeDashoffset = offset;
+
+                // Ambient Fill Logic
+                const percent = this.totalTime > 0 ? ((this.totalTime - this.timeLeft) / this.totalTime) * 100 : 0;
+                document.getElementById('ambient-fill').style.height = `${percent}%`;
+
+                const statusEl = document.getElementById('timer-status');
+                if (this.timeLeft === 0) statusEl.innerText = "COMPLETE";
+                else if (this.isRunning) statusEl.innerText = this.mode === 'pomodoro' ? "FLOW STATE" : "RECHARGING";
+                else statusEl.innerText = this.mode === 'pomodoro' ? "READY" : "REST";
+            },
+
+            updateControls() {
+                const btn = document.getElementById('main-action-btn');
+                btn.innerHTML = this.isRunning 
+                    ? `<i data-lucide="pause" class="w-12 h-12 ml-0.5 fill-current"></i>` 
+                    : `<i data-lucide="play" class="w-12 h-12 ml-1 fill-current"></i>`;
+                lucide.createIcons();
+            },
+
+            addTask(e) {
+                e.preventDefault();
+                const input = document.getElementById('task-input');
+                const text = input.value.trim();
+                if (!text) return;
+                this.tasks.unshift({ id: Date.now(), text, done: false });
+                this.saveData();
+                this.renderTasks();
+                input.value = '';
+            },
+
+            toggleTask(id) {
+                const task = this.tasks.find(t => t.id === id);
+                if (task) {
+                    task.done = !task.done;
+                    this.tasks.sort((a, b) => a.done === b.done ? 0 : a.done ? 1 : -1);
+                    this.saveData();
+                    this.renderTasks();
+                }
+            },
+
+            deleteTask(id) {
+                this.tasks = this.tasks.filter(t => t.id !== id);
+                this.saveData();
+                this.renderTasks();
+            },
+
+            renderTasks() {
+                const list = document.getElementById('task-list');
+                const count = document.getElementById('task-count');
+                const activeCount = this.tasks.filter(t => !t.done).length;
+                count.innerText = `${activeCount} LEFT`;
+                
+                if (this.tasks.length === 0) {
+                    list.innerHTML = `<li class="text-center text-slate-400 text-sm mt-8 font-medium italic opacity-80">Define your mission.<br>Engage the timer.</li>`;
+                    return;
+                }
+
+                list.innerHTML = this.tasks.map(task => `
+                    <li class="group flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm transition-all hover:shadow-md ${task.done ? 'opacity-50 bg-slate-50' : ''}">
+                        <div class="flex items-center overflow-hidden w-full" onclick="app.toggleTask(${task.id})">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center cursor-pointer mr-4 transition-colors ${task.done ? 'bg-slate-400 border-slate-400' : 'border-slate-300 hover:border-slate-900'}">
+                                ${task.done ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
+                            </div>
+                            <span class="text-base font-bold truncate cursor-pointer select-none ${task.done ? 'line-through text-slate-400' : 'text-slate-800'}">${task.text}</span>
+                        </div>
+                        <button onclick="app.deleteTask(${task.id})" class="text-slate-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100 focus:opacity-100 p-2">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </li>
+                `).join('');
+                lucide.createIcons();
+            },
+
+            toggleSettings() {
+                const modal = document.getElementById('settings-modal');
+                const content = document.getElementById('settings-content');
+                if (modal.classList.contains('hidden')) {
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                        modal.classList.remove('opacity-0');
+                        content.classList.remove('scale-95');
+                        content.classList.add('scale-100');
+                    }, 10);
+                } else {
+                    modal.classList.add('opacity-0');
+                    content.classList.remove('scale-100');
+                    content.classList.add('scale-95');
+                    setTimeout(() => { modal.classList.add('hidden'); }, 200);
+                }
+            },
+
+            toggleAutoStart() {
+                this.settings.autoStart = !this.settings.autoStart;
+                this.updateToggleUI('btn-autostart', this.settings.autoStart);
+            },
+
+            toggleSound() {
+                this.settings.sound = !this.settings.sound;
+                this.updateToggleUI('btn-sound', this.settings.sound);
+            },
+
+            updateToggleUI(btnId, isActive) {
+                const btn = document.getElementById(btnId);
+                const knob = btn.querySelector('div');
+                if (isActive) {
+                    btn.classList.remove('bg-slate-200');
+                    btn.classList.add('bg-emerald-500');
+                    knob.classList.remove('left-0.5');
+                    knob.classList.add('translate-x-6');
+                    knob.style.left = 'auto'; knob.style.right = '2px';
+                } else {
+                    btn.classList.add('bg-slate-200');
+                    btn.classList.remove('bg-emerald-500');
+                    knob.classList.remove('translate-x-6');
+                    knob.style.left = '2px'; knob.style.right = 'auto';
+                }
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>

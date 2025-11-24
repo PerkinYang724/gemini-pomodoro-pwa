@@ -1,0 +1,12 @@
+{
+    "name": "gemini-pomodoro-pwa",
+    "version": "1.0.0",
+    "description": "Zen Pomodoro Timer PWA with AI features",
+    "scripts": {
+        "dev": "npx http-server . -p 8080 -o -c-1",
+        "devc": "npx http-server . -p 8080 -o -c-1"
+    },
+    "devDependencies": {
+        "http-server": "^14.1.1"
+    }
+}
