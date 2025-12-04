@@ -99,8 +99,7 @@
     </header>
 
     <!-- Main Timer Section -->
-    <!-- Added pb-[36vh] to reserve space for bottom sheet, preventing overlap -->
-    <main class="flex-grow flex flex-col items-center justify-center relative z-10 px-4 pb-[36vh] sm:pb-0 transition-all">
+    <main class="flex-grow flex flex-col items-center justify-center relative z-10 px-4 transition-all">
         
         <!-- Toast Notification Area -->
         <div id="toast" class="absolute top-0 bg-white shadow-2xl border border-slate-200 px-6 py-4 rounded-full transform -translate-y-32 transition-transform duration-500 z-50 flex items-center max-w-xs sm:max-w-md text-center">
@@ -140,42 +139,6 @@
 
     </main>
 
-    <!-- Task Manager -->
-    <section class="glass-panel rounded-t-[2.5rem] mx-auto w-full max-w-md flex flex-col z-20 transition-all duration-300 absolute bottom-0 h-[35vh] sm:h-[40vh] shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
-        <div class="p-6 sm:p-8 flex flex-col h-full">
-            <div class="flex justify-between items-center mb-4 sm:mb-6">
-                <h2 class="text-lg sm:text-xl font-black text-slate-800 flex items-center tracking-tight">
-                    <i data-lucide="target" class="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-slate-400"></i>
-                    MISSION
-                </h2>
-                <div class="flex gap-2 items-center">
-                    <button onclick="app.copyTasks()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition" title="Copy Mission to Clipboard">
-                        <i data-lucide="copy" class="w-4 h-4"></i>
-                    </button>
-                    <span id="task-count" class="text-xs font-black bg-slate-900 text-white px-3 py-1.5 rounded-full tracking-wider">0 LEFT</span>
-                </div>
-            </div>
-
-            <!-- Add Task Form -->
-            <form onsubmit="app.addTask(event)" class="relative mb-4 sm:mb-6 flex gap-3">
-                <div class="relative flex-grow">
-                    <input type="text" id="task-input" placeholder="Define objective..." 
-                        class="w-full pl-5 pr-4 py-3 sm:py-4 rounded-2xl bg-slate-100 text-slate-900 placeholder-slate-400 focus:bg-white border-2 border-slate-200 focus:border-slate-900 transition text-sm sm:text-base font-bold shadow-inner">
-                </div>
-                
-                <!-- Add Button -->
-                <button type="submit" class="bg-slate-900 text-white px-4 sm:px-5 rounded-2xl hover:bg-slate-800 transition btn-press flex items-center justify-center shadow-lg">
-                    <i data-lucide="plus" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                </button>
-            </form>
-
-            <!-- Task List -->
-            <ul id="task-list" class="task-scroll overflow-y-auto flex-1 space-y-2 sm:space-y-3 pb-6 px-1">
-                <!-- Tasks injected here -->
-                <li class="text-center text-slate-400 text-sm mt-8 font-medium">No objectives defined.<br>Engage the timer.</li>
-            </ul>
-        </div>
-    </section>
 
     <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 backdrop-blur-md opacity-0 transition-opacity duration-200">
@@ -548,7 +511,7 @@
                 if (isActive) {
                     btn.classList.remove('bg-slate-200');
                     btn.classList.add('bg-emerald-500');
-                    knob.classList.remove('left-0.5');
+                    knob.classList.remove('left-ew0.5');
                     knob.classList.add('translate-x-6');
                     knob.style.left = 'auto'; knob.style.right = '2px';
                 } else {
