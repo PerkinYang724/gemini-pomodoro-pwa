@@ -1,20 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Zen Pomodoro + AI</title>
-    
+
     <!-- PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#dc2626" id="theme-color">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc2626'/></svg>">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23dc2626'/></svg>">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -36,16 +38,19 @@
         .task-scroll::-webkit-scrollbar {
             width: 4px;
         }
+
         .task-scroll::-webkit-scrollbar-thumb {
-            background-color: rgba(0,0,0,0.2);
+            background-color: rgba(0, 0, 0, 0.2);
             border-radius: 4px;
         }
 
         /* Stark Contrast Glass Panel */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.96); /* More solid for contrast */
+            background: rgba(255, 255, 255, 0.96);
+            /* More solid for contrast */
             backdrop-filter: blur(12px);
-            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5); /* Deeper shadow */
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+            /* Deeper shadow */
         }
 
         .btn-press:active {
@@ -55,11 +60,11 @@
         input:focus {
             outline: none;
         }
-        
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
+
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         /* Ambient Progress Fill Transition */
@@ -67,15 +72,15 @@
             transition: height 0.2s linear;
         }
     </style>
-    
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        pomo: '#dc2626', 
-                        short: '#047857', 
-                        long: '#4338ca', 
+                        pomo: '#dc2626',
+                        short: '#047857',
+                        long: '#4338ca',
                         dark: '#0f172a'
                     }
                 }
@@ -84,55 +89,74 @@
     </script>
 </head>
 <!-- Default background set to Red-600 for high contrast start -->
+
 <body class="bg-red-600 h-screen flex flex-col overflow-hidden text-slate-900 selection:bg-black/20 relative">
 
     <!-- Ambient Progress Background Fill -->
-    <div id="ambient-fill" class="fixed top-0 left-0 w-full bg-white/30 pointer-events-none z-0 h-0 transition-[height] duration-1000 ease-linear"></div>
+    <div id="ambient-fill"
+        class="fixed top-0 left-0 w-full bg-white/30 pointer-events-none z-0 h-0 transition-[height] duration-1000 ease-linear">
+    </div>
 
     <!-- Header / Mode Switcher -->
     <header class="flex justify-center py-4 sm:py-6 z-10 shrink-0 transition-all">
         <div class="glass-panel rounded-full p-1.5 flex space-x-1 shadow-xl scale-90 sm:scale-100 origin-top">
-            <button onclick="app.switchMode('pomodoro')" id="btn-pomodoro" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all bg-red-100 text-red-700">FOCUS</button>
-            <button onclick="app.switchMode('short')" id="btn-short" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all hover:bg-slate-100 text-slate-600">SHORT</button>
-            <button onclick="app.switchMode('long')" id="btn-long" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all hover:bg-slate-100 text-slate-600">LONG</button>
+            <button onclick="app.switchMode('pomodoro')" id="btn-pomodoro"
+                class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all bg-red-100 text-red-700">FOCUS</button>
+            <button onclick="app.switchMode('short')" id="btn-short"
+                class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all hover:bg-slate-100 text-slate-600">SHORT</button>
+            <button onclick="app.switchMode('long')" id="btn-long"
+                class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all hover:bg-slate-100 text-slate-600">LONG</button>
         </div>
     </header>
 
     <!-- Main Timer Section -->
     <main class="flex-grow flex flex-col items-center justify-center relative z-10 px-4 transition-all">
-        
+
         <!-- Toast Notification Area -->
-        <div id="toast" class="absolute top-0 bg-white shadow-2xl border border-slate-200 px-6 py-4 rounded-full transform -translate-y-32 transition-transform duration-500 z-50 flex items-center max-w-xs sm:max-w-md text-center">
+        <div id="toast"
+            class="absolute top-0 bg-white shadow-2xl border border-slate-200 px-6 py-4 rounded-full transform -translate-y-32 transition-transform duration-500 z-50 flex items-center max-w-xs sm:max-w-md text-center">
             <span id="toast-msg" class="text-sm font-bold text-slate-800"></span>
         </div>
 
         <!-- Timer Circle - Responsive Sizing -->
-        <div class="relative w-60 h-60 sm:w-80 sm:h-80 mb-6 sm:mb-8 cursor-pointer drop-shadow-2xl transition-all" onclick="app.toggleTimer()">
+        <div class="relative w-60 h-60 sm:w-80 sm:h-80 mb-6 sm:mb-8 cursor-pointer drop-shadow-2xl transition-all"
+            onclick="app.toggleTimer()">
             <svg class="w-full h-full" viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="5" />
-                <circle id="progress-ring" class="progress-ring__circle" cx="60" cy="60" r="54" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-dasharray="339.292" stroke-dashoffset="0" />
+                <circle id="progress-ring" class="progress-ring__circle" cx="60" cy="60" r="54" fill="none"
+                    stroke="white" stroke-width="5" stroke-linecap="round" stroke-dasharray="339.292"
+                    stroke-dashoffset="0" />
             </svg>
-            
+
             <div class="absolute inset-0 flex flex-col items-center justify-center text-white select-none">
-                <div id="timer-display" class="text-6xl sm:text-8xl font-bold tracking-tighter drop-shadow-md transition-all">25:00</div>
-                <div id="timer-status" class="text-base sm:text-xl font-bold tracking-widest mt-2 sm:mt-4 opacity-100 transition-all">READY</div>
+                <div id="timer-display"
+                    class="text-6xl sm:text-8xl font-bold tracking-tighter drop-shadow-md transition-all">25:00</div>
+                <div id="timer-status"
+                    class="text-base sm:text-xl font-bold tracking-widest mt-2 sm:mt-4 opacity-100 transition-all">READY
+                </div>
             </div>
         </div>
 
         <!-- Main Controls - Responsive Sizing -->
         <div class="flex items-center space-x-4 sm:space-x-8 mb-2 sm:mb-4">
             <!-- Reset -->
-            <button onclick="app.resetTimer()" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press backdrop-blur-sm" title="Reset Timer">
+            <button onclick="app.resetTimer()"
+                class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press backdrop-blur-sm"
+                title="Reset Timer">
                 <i data-lucide="rotate-ccw" class="w-6 h-6 sm:w-7 sm:h-7"></i>
             </button>
-            
+
             <!-- Play/Pause -->
-            <button onclick="app.toggleTimer()" id="main-action-btn" class="h-20 w-20 sm:h-24 sm:w-24 rounded-3xl bg-white text-red-600 shadow-2xl flex items-center justify-center transition transform hover:scale-105 btn-press border-4 border-white/50" title="Start/Pause">
+            <button onclick="app.toggleTimer()" id="main-action-btn"
+                class="h-20 w-20 sm:h-24 sm:w-24 rounded-3xl bg-white text-red-600 shadow-2xl flex items-center justify-center transition transform hover:scale-105 btn-press border-4 border-white/50"
+                title="Start/Pause">
                 <i data-lucide="play" class="w-10 h-10 sm:w-12 sm:h-12 ml-1 fill-current"></i>
             </button>
 
             <!-- Settings -->
-            <button onclick="app.toggleSettings()" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press backdrop-blur-sm" title="Settings">
+            <button onclick="app.toggleSettings()"
+                class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white flex items-center justify-center transition btn-press backdrop-blur-sm"
+                title="Settings">
                 <i data-lucide="settings-2" class="w-6 h-6 sm:w-7 sm:h-7"></i>
             </button>
         </div>
@@ -141,50 +165,64 @@
 
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 backdrop-blur-md opacity-0 transition-opacity duration-200">
-        <div class="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl transform scale-95 transition-transform duration-200 border border-white/20" id="settings-content">
+    <div id="settings-modal"
+        class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 backdrop-blur-md opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl transform scale-95 transition-transform duration-200 border border-white/20"
+            id="settings-content">
             <div class="flex justify-between items-center mb-8">
                 <h3 class="text-2xl font-black text-slate-900 tracking-tight">Settings</h3>
-                <button onclick="app.toggleSettings()" class="text-slate-400 hover:text-slate-800 bg-slate-100 p-2 rounded-full transition-colors">
+                <button onclick="app.toggleSettings()"
+                    class="text-slate-400 hover:text-slate-800 bg-slate-100 p-2 rounded-full transition-colors">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
 
             <div class="space-y-8">
                 <div>
-                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Timer (Minutes)</label>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Timer
+                        (Minutes)</label>
                     <div class="flex gap-3">
                         <div class="flex-1">
                             <label class="text-xs text-slate-500 mb-1.5 block font-bold text-center">Focus</label>
-                            <input type="number" id="set-pomo" value="25" class="w-full bg-red-50 border-2 border-red-100 rounded-xl p-3 text-center font-black text-red-600 focus:border-red-500 transition">
+                            <input type="number" id="set-pomo" value="25"
+                                class="w-full bg-red-50 border-2 border-red-100 rounded-xl p-3 text-center font-black text-red-600 focus:border-red-500 transition">
                         </div>
                         <div class="flex-1">
                             <label class="text-xs text-slate-500 mb-1.5 block font-bold text-center">Short</label>
-                            <input type="number" id="set-short" value="5" class="w-full bg-emerald-50 border-2 border-emerald-100 rounded-xl p-3 text-center font-black text-emerald-600 focus:border-emerald-500 transition">
+                            <input type="number" id="set-short" value="5"
+                                class="w-full bg-emerald-50 border-2 border-emerald-100 rounded-xl p-3 text-center font-black text-emerald-600 focus:border-emerald-500 transition">
                         </div>
                         <div class="flex-1">
                             <label class="text-xs text-slate-500 mb-1.5 block font-bold text-center">Long</label>
-                            <input type="number" id="set-long" value="15" class="w-full bg-indigo-50 border-2 border-indigo-100 rounded-xl p-3 text-center font-black text-indigo-600 focus:border-indigo-500 transition">
+                            <input type="number" id="set-long" value="15"
+                                class="w-full bg-indigo-50 border-2 border-indigo-100 rounded-xl p-3 text-center font-black text-indigo-600 focus:border-indigo-500 transition">
                         </div>
                     </div>
                 </div>
 
                 <div class="flex items-center justify-between p-2">
                     <span class="text-slate-800 font-bold text-lg">Auto-start Breaks</span>
-                    <button onclick="app.toggleAutoStart()" id="btn-autostart" class="w-14 h-8 bg-slate-200 rounded-full relative transition-colors duration-300 border-2 border-transparent">
-                        <div class="w-6 h-6 bg-white rounded-full shadow-md absolute top-0.5 left-0.5 transition-transform duration-300"></div>
+                    <button onclick="app.toggleAutoStart()" id="btn-autostart"
+                        class="w-14 h-8 bg-slate-200 rounded-full relative transition-colors duration-300 border-2 border-transparent">
+                        <div
+                            class="w-6 h-6 bg-white rounded-full shadow-md absolute top-0.5 left-0.5 transition-transform duration-300">
+                        </div>
                     </button>
                 </div>
 
                 <div class="flex items-center justify-between p-2">
                     <span class="text-slate-800 font-bold text-lg">Sound</span>
-                    <button onclick="app.toggleSound()" id="btn-sound" class="w-14 h-8 bg-slate-900 rounded-full relative transition-colors duration-300 border-2 border-transparent">
-                        <div class="w-6 h-6 bg-white rounded-full shadow-md absolute top-0.5 right-0.5 transition-transform duration-300"></div>
+                    <button onclick="app.toggleSound()" id="btn-sound"
+                        class="w-14 h-8 bg-slate-900 rounded-full relative transition-colors duration-300 border-2 border-transparent">
+                        <div
+                            class="w-6 h-6 bg-white rounded-full shadow-md absolute top-0.5 right-0.5 transition-transform duration-300">
+                        </div>
                     </button>
                 </div>
             </div>
 
-            <button onclick="app.saveSettings()" class="w-full mt-10 bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition btn-press shadow-lg">
+            <button onclick="app.saveSettings()"
+                class="w-full mt-10 bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition btn-press shadow-lg">
                 Save Changes
             </button>
         </div>
@@ -193,7 +231,7 @@
     <script>
         // --- Audio Context for Beeps ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
+
         function playNotificationSound() {
             if (!app.settings.sound) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -203,7 +241,7 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
             oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); 
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
             oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.5);
             gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
@@ -245,7 +283,7 @@
                 txt.innerText = msg;
                 toast.classList.remove('-translate-y-32');
                 toast.classList.add('translate-y-8');
-                
+
                 setTimeout(() => {
                     toast.classList.remove('translate-y-8');
                     toast.classList.add('-translate-y-32');
@@ -260,9 +298,9 @@
                     this.showToast("Nothing to copy.");
                     return;
                 }
-                
+
                 const text = "MY MISSION:\n\n" + this.tasks.map(t => `${t.done ? '[x]' : '[ ]'} ${t.text}`).join('\n');
-                
+
                 // Legacy method for broad compatibility
                 const textArea = document.createElement("textarea");
                 textArea.value = text;
@@ -283,7 +321,7 @@
                 if (savedSettings) this.settings = JSON.parse(savedSettings);
                 const savedTasks = localStorage.getItem('zen-tasks');
                 if (savedTasks) this.tasks = JSON.parse(savedTasks);
-                
+
                 document.getElementById('set-pomo').value = this.settings.pomodoro;
                 document.getElementById('set-short').value = this.settings.short;
                 document.getElementById('set-long').value = this.settings.long;
@@ -331,14 +369,14 @@
                 const actionBtn = document.getElementById('main-action-btn');
                 actionBtn.className = actionBtn.className.replace(/text-\w+-(500|600|700)/g, '');
                 actionBtn.classList.add(this.themes[this.mode].text);
-                
+
                 const timerStatus = document.getElementById('timer-status');
                 if (timerStatus) {
-                     if (this.timeLeft === 0) timerStatus.innerText = "COMPLETE";
-                     else if (this.isRunning) timerStatus.innerText = this.mode === 'pomodoro' ? "FLOW STATE" : "RECHARGING";
-                     else timerStatus.innerText = this.mode === 'pomodoro' ? "READY" : "REST";
+                    if (this.timeLeft === 0) timerStatus.innerText = "COMPLETE";
+                    else if (this.isRunning) timerStatus.innerText = this.mode === 'pomodoro' ? "FLOW STATE" : "RECHARGING";
+                    else timerStatus.innerText = this.mode === 'pomodoro' ? "READY" : "REST";
                 }
-                
+
                 document.getElementById('theme-color').setAttribute('content', this.themes[this.mode].meta);
             },
 
@@ -398,7 +436,7 @@
                 const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 document.getElementById('timer-display').innerText = timeString;
                 document.title = `${timeString} - Zen Focus`;
-                
+
                 const circle = document.getElementById('progress-ring');
                 const radius = circle.r.baseVal.value;
                 const circumference = radius * 2 * Math.PI;
@@ -417,8 +455,8 @@
 
             updateControls() {
                 const btn = document.getElementById('main-action-btn');
-                btn.innerHTML = this.isRunning 
-                    ? `<i data-lucide="pause" class="w-10 h-10 sm:w-12 sm:h-12 ml-0.5 fill-current"></i>` 
+                btn.innerHTML = this.isRunning
+                    ? `<i data-lucide="pause" class="w-10 h-10 sm:w-12 sm:h-12 ml-0.5 fill-current"></i>`
                     : `<i data-lucide="play" class="w-10 h-10 sm:w-12 sm:h-12 ml-1 fill-current"></i>`;
                 lucide.createIcons();
             },
@@ -455,7 +493,7 @@
                 const count = document.getElementById('task-count');
                 const activeCount = this.tasks.filter(t => !t.done).length;
                 count.innerText = `${activeCount} LEFT`;
-                
+
                 if (this.tasks.length === 0) {
                     list.innerHTML = `<li class="text-center text-slate-400 text-sm mt-8 font-medium italic opacity-80">Define your mission.<br>Engage the timer.</li>`;
                     return;
@@ -526,4 +564,5 @@
         window.addEventListener('DOMContentLoaded', () => app.init());
     </script>
 </body>
+
 </html>
